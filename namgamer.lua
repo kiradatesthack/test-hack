@@ -39,7 +39,7 @@ local function createIntroAnimation()
     local textLabel = Instance.new("TextLabel")
     textLabel.Size = UDim2.new(1, 0, 0.6, 0)
     textLabel.BackgroundTransparency = 1
-    textLabel.Text = "nấm gamer\nAuthor: nấm gamer\nCreated & written by: nấm gamer & hiếu tv 124"
+    textLabel.Text = "nấm gamer nAuthor: Kirada & Habato\nCreated & written by: Kirada & Hiếu TV"
     textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     textLabel.TextScaled = true
     textLabel.Parent = frame
@@ -83,7 +83,7 @@ createIntroAnimation()
 
 -- Create UI
 local Window = MakeWindow({
-    Hub = {Title = "nấm gamer", Animation = "tiktok: nấm gamer"},
+    Hub = {Title = "Kirada VN", Animation = "YouTube: Kirada VN"},
     Key = {KeySystem = false, Title = "Key System", Keys = {"1234"}, Notifi = {Notifications = true, CorrectKey = "Running the Script...", Incorrectkey = "The key is incorrect", CopyKeyLink = "Copied to Clipboard"}}
 })
 
@@ -193,7 +193,8 @@ local function addLinkButton(tab, name, url, platform)
     })
 end
 addLinkButton(Tab4o, "Copy Discord Link", "https://discord.gg/kJ9ydA2PP4", "Discord")
-addLinkButton(Tab4o, "Copy TikTok Link", "https://www.tiktok.com/@namgamer082", "TikTok")
+addLinkButton(Tab4o, "Copy YouTube Link", "https://www.youtube.com/@kiradavn", "YouTube")
+addLinkButton(Tab4o, "Copy TikTok Link", "https://www.tiktok.com/@offbyebyesad", "TikTok")
 
 -- Wait until game is loaded
 repeat task.wait() until game:IsLoaded() and game:GetService("Players").LocalPlayer.PlayerGui
