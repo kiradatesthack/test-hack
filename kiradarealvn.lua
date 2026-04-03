@@ -1,194 +1,151 @@
--- SAYGEX MENU for Mobile Delta 🗿
-local Library = {}
-local MenuOpen = true
+-- Auto Server Hopper với GUI nút Click
+-- Tạo bởi Grok - Dùng cho Roblox Executor
+
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local PlaceId = game.PlaceId
+local currentJobId = game.JobId
 
 -- Tạo ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "SaygexMenu"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = game.CoreGui
+ScreenGui.Name = "AutoServerHopper"
+ScreenGui.Parent = game:GetService("CoreGui")  -- hoặc LocalPlayer:WaitForChild("PlayerGui")
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 320, 0, 400)
-MainFrame.Position = UDim2.new(0.5, -160, 0.5, -200)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.Parent = ScreenGui
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 250, 0, 180)
+Frame.Position = UDim2.new(0.5, -125, 0.5, -90)
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.BorderSizePixel = 0
+Frame.Parent = ScreenGui
 
--- Corner bo tròn
 local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 12)
-Corner.Parent = MainFrame
+Corner.CornerRadius = UDim.new(0, 8)
+Corner.Parent = Frame
 
--- Tiêu đề SAYGEX
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 50)
+Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "🗿 SAYGEX MENU 🗿"
-Title.TextColor3 = Color3.fromRGB(255, 50, 50)
+Title.Text = "Auto Tìm Server"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextScaled = true
 Title.Font = Enum.Font.GothamBold
-Title.Parent = MainFrame
+Title.Parent = Frame
 
--- Nút đóng menu (X)
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(1, -35, 0, 10)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-CloseBtn.Text = "X"
-CloseBtn.TextColor3 = Color3.new(1,1,1)
-CloseBtn.TextScaled = true
-CloseBtn.Parent = MainFrame
-CloseBtn.MouseButton1Click:Connect(function()
-    ScreenGui.Enabled = false
-    print("Saygex menu closed 🗿")
-end)
-
--- Status
 local Status = Instance.new("TextLabel")
 Status.Size = UDim2.new(1, 0, 0, 30)
-Status.Position = UDim2.new(0, 0, 0, 60)
+Status.Position = UDim2.new(0, 0, 0, 45)
 Status.BackgroundTransparency = 1
-Status.Text = "Headlock: OFF | ESP: ON"
+Status.Text = "Trạng thái: Sẵn sàng"
 Status.TextColor3 = Color3.fromRGB(0, 255, 100)
 Status.TextScaled = true
-Status.Parent = MainFrame
+Status.Font = Enum.Font.Gotham
+Status.Parent = Frame
 
--- ================== TOGGLE BUTTONS ==================
-local function CreateToggle(name, yPos, callback)
-    local Btn = Instance.new("TextButton")
-    Btn.Size = UDim2.new(0.9, 0, 0, 50)
-    Btn.Position = UDim2.new(0.05, 0, 0, yPos)
-    Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-    Btn.Text = name
-    Btn.TextColor3 = Color3.new(1,1,1)
-    Btn.TextScaled = true
-    Btn.Font = Enum.Font.GothamSemibold
-    Btn.Parent = MainFrame
-    
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 8)
-    btnCorner.Parent = Btn
-    
-    local enabled = false
-    Btn.MouseButton1Click:Connect(function()
-        enabled = not enabled
-        Btn.BackgroundColor3 = enabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(40, 40, 60)
-        callback(enabled)
-        Status.Text = "Headlock: " .. (aimbotEnabled and "ON" or "OFF") .. " | ESP: " .. (ESPEnabled and "ON" or "OFF")
+-- Nút Start Auto
+local StartButton = Instance.new("TextButton")
+StartButton.Size = UDim2.new(0.9, 0, 0, 40)
+StartButton.Position = UDim2.new(0.05, 0, 0, 85)
+StartButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+StartButton.Text = "BẮT ĐẦU AUTO HOP"
+StartButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+StartButton.TextScaled = true
+StartButton.Font = Enum.Font.GothamBold
+StartButton.Parent = Frame
+
+local StartCorner = Instance.new("UICorner")
+StartCorner.CornerRadius = UDim.new(0, 6)
+StartCorner.Parent = StartButton
+
+-- Nút Stop
+local StopButton = Instance.new("TextButton")
+StopButton.Size = UDim2.new(0.9, 0, 0, 30)
+StopButton.Position = UDim2.new(0.05, 0, 0, 135)
+StopButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+StopButton.Text = "DỪNG AUTO"
+StopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+StopButton.TextScaled = true
+StopButton.Font = Enum.Font.Gotham
+StopButton.Parent = Frame
+
+local isRunning = false
+
+local function getServers(cursor)
+    local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+    if cursor then
+        url = url .. "&cursor=" .. cursor
+    end
+    local success, response = pcall(function()
+        return HttpService:JSONDecode(game:HttpGet(url))
+    end)
+    if success then
+        return response
+    end
+    return nil
+end
+
+local function hopToServer(jobId)
+    if jobId == currentJobId then return end
+    Status.Text = "Đang hop server..."
+    Status.TextColor3 = Color3.fromRGB(255, 255, 0)
+    pcall(function()
+        TeleportService:TeleportToPlaceInstance(PlaceId, jobId, LocalPlayer)
     end)
 end
 
--- Variables
-local aimbotEnabled = false
-local ESPEnabled = true
-local Hitpart = "Head"
-local Smoothness = 0.25
-local FOV = 120
-
-local player = game.Players.LocalPlayer
-local camera = workspace.CurrentCamera
-local UIS = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-
--- Toggle Headlock
-CreateToggle("Headlock Aimbot (Toggle)", 100, function(state)
-    aimbotEnabled = state
-end)
-
--- Toggle ESP
-CreateToggle("ESP Box + Name", 160, function(state)
-    ESPEnabled = state
-end)
-
--- ================== ESP Code (giữ nguyên như trước) ==================
-local espFolder = Instance.new("Folder")
-espFolder.Name = "SaygexESP"
-espFolder.Parent = game.CoreGui
-
-local function createESP(plr)
-    if plr == player then return end
-    -- (code ESP Drawing giống script cũ, tao rút gọn để ngắn)
-    local box = Drawing.new("Square")
-    box.Thickness = 2
-    box.Filled = false
-    box.Color = Color3.fromRGB(255, 0, 100)
-    
-    local nameTag = Drawing.new("Text")
-    nameTag.Size = 15
-    nameTag.Center = true
-    nameTag.Outline = true
-    nameTag.Color = Color3.new(1,1,1)
-    
-    RunService.RenderStepped:Connect(function()
-        if ESPEnabled and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-            local root = plr.Character.HumanoidRootPart
-            local head = plr.Character:FindFirstChild("Head")
-            local hum = plr.Character:FindFirstChild("Humanoid")
-            if head and hum then
-                local pos, onScreen = camera:WorldToViewportPoint(root.Position)
-                if onScreen then
-                    local top = camera:WorldToViewportPoint(head.Position + Vector3.new(0,2,0))
-                    local bottom = camera:WorldToViewportPoint(root.Position - Vector3.new(0,3,0))
-                    local height = bottom.Y - top.Y
-                    
-                    box.Size = Vector2.new(height/2, height)
-                    box.Position = Vector2.new(pos.X - box.Size.X/2, top.Y)
-                    box.Visible = true
-                    
-                    nameTag.Text = plr.Name .. " [" .. math.floor(hum.Health) .. "]"
-                    nameTag.Position = Vector2.new(pos.X, top.Y - 25)
-                    nameTag.Visible = true
-                else
-                    box.Visible = false
-                    nameTag.Visible = false
-                end
-            end
-        else
-            box.Visible = false
-            nameTag.Visible = false
-        end
-    end)
-end
-
-for _, plr in game.Players:GetPlayers() do createESP(plr) end
-game.Players.PlayerAdded:Connect(createESP)
-
--- ================== Headlock Aimbot ==================
-local target = nil
-
-local function getClosest()
-    local closest, dist = nil, math.huge
-    local mousePos = UIS:GetMouseLocation()
-    for _, plr in game.Players:GetPlayers() do
-        if plr \~= player and plr.Character and plr.Character:FindFirstChild(Hitpart) then
-            local hum = plr.Character:FindFirstChild("Humanoid")
-            if hum and hum.Health > 0 then
-                local screenPos, onScreen = camera:WorldToViewportPoint(plr.Character[Hitpart].Position)
-                if onScreen then
-                    local d = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
-                    if d < FOV and d < dist then
-                        closest = plr
-                        dist = d
+local function autoHop()
+    while isRunning do
+        Status.Text = "Đang quét server..."
+        Status.TextColor3 = Color3.fromRGB(255, 200, 0)
+        
+        local cursor = nil
+        local found = false
+        
+        repeat
+            local servers = getServers(cursor)
+            if servers and servers.data then
+                for _, server in ipairs(servers.data) do
+                    if server.playing < server.maxPlayers and server.id \~= currentJobId then
+                        -- Có thể thêm điều kiện tìm "hack" ở đây (ví dụ: server có ít người hoặc nhiều người)
+                        -- Hiện tại hop random server không full
+                        hopToServer(server.id)
+                        found = true
+                        wait(3) -- đợi hop
+                        break
                     end
                 end
+                cursor = servers.nextPageCursor
+            else
+                break
             end
+            wait(0.5)
+        until not cursor or found or not isRunning
+        
+        if not found then
+            Status.Text = "Không tìm thấy server phù hợp, thử lại sau..."
+            wait(5)
         end
+        wait(2)
     end
-    return closest
 end
 
-RunService.RenderStepped:Connect(function()
-    if aimbotEnabled then
-        target = getClosest()
-        if target and target.Character and target.Character:FindFirstChild(Hitpart) then
-            local tPos = camera:WorldToViewportPoint(target.Character[Hitpart].Position)
-            local mPos = UIS:GetMouseLocation()
-            mousemoverel((tPos.X - mPos.X) * Smoothness, (tPos.Y - mPos.Y) * Smoothness)
-        end
+StartButton.MouseButton1Click:Connect(function()
+    if not isRunning then
+        isRunning = true
+        Status.Text = "Auto đang chạy..."
+        Status.TextColor3 = Color3.fromRGB(0, 255, 100)
+        StartButton.Text = "ĐANG CHẠY..."
+        spawn(autoHop)
     end
 end)
 
-print("🗿 SAYGEX MENU loaded successfully! Menu sẽ hiện ngay khi execute.")
+StopButton.MouseButton1Click:Connect(function()
+    isRunning = false
+    Status.Text = "Đã dừng auto"
+    Status.TextColor3 = Color3.fromRGB(255, 100, 100)
+    StartButton.Text = "BẮT ĐẦU AUTO HOP"
+end)
+
+print("Auto Server Hopper GUI đã load thành công!")
